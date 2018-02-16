@@ -9,13 +9,13 @@ Just run `make`. Requires C++14.
 ```
 $ ./spfind 4
 Done!
-States expanded: 38712
+States expanded: 35
 Sequence length: 33
 Sequence: [1 2 3 4 1 2 3 1 4 2 3 1 2 4 3 1 2 1 3 4 2 1 3 2 4 1 3 2 1 4 3 2 1 ]
 ```
 
 ## Status
-Currently very slow and memory inefficient. Only values less than 5 work at the
+Currently very slow and memory inefficient. Only values up to 5 work at the
 moment. Current plans:
  * Use SMA\* instead of A\* for memory reasons
  * Find some way to improve the heuristic
