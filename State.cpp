@@ -4,21 +4,23 @@
 #include <set>
 
 int State::mNumExpanded = 0;
-std::vector<IntSequence> gPerms;
 
-State::State(int n)
+// assuming only one perm cache. bad style, but whatever
+PermCache* gPermCache = nullptr;
+
+State::State(PermCache* pc)
 {
-    // compute all permutations of {1, 2, ..., n}
-    for (int i = 0; i < n; ++i)
-        mSeq.push_back(i+1);
-    gPerms = mSeq.permute();
+    gPermCache = pc;
+    auto& perms = pc->getPerms();
+
+    // arbitrarily set our sequence to the first permutation
+    mLastAdded = 0;
 
     // create the remaining permutations list
-    for (auto& perm : gPerms) {
-        if (perm != mSeq) {
-            mRemaining.push_back(&perm);
-        }
-    }
+    for (int i = 1; i < perms.size(); ++i)
+        mRemaining.push_back(i);
+
+    mCost = pc->getN();
 }
 
 bool State::isGoal() const
@@ -28,7 +30,7 @@ bool State::isGoal() const
 
 int State::getCost() const
 {
-    return mSeq.size();
+    return mCost;
 }
 
 int State::getHeuristic() const
@@ -37,40 +39,43 @@ int State::getHeuristic() const
     return mRemaining.size();
 }
 
-void State::expand(std::priority_queue<State>& q) const
+void State::expand(StatePtrHeap& q)
 {
-    std::map<IntSequence*, State> toBePushed;
-    std::set<IntSequence*> ignore;
+    // basic idea: think of each permId as a node, where the cost between two
+    // nodes is their overlap.
 
+    int n = gPermCache->getN();
+
+    // calculate the maximum possible overlap with our remaining perms
+    int maxOvr = 0;
     for (auto r : mRemaining) {
-        State newState(*this);
-        ++mNumExpanded;
+        int ovr = gPermCache->getOverlap(mLastAdded, r);
+        maxOvr = ovr > maxOvr ? ovr : maxOvr;
 
-        // append sequence r as "efficiently" as possible
-        newState.mRemaining.remove(r);
-        int ovr = newState.mSeq.overlap(*r);
-        for (int i = ovr; i < r->size(); ++i) {
-            newState.mSeq.push_back((*r)[i]);
-        }
-
-        // we might have included other permutations, get them out of mRemaining
-        auto it = newState.mRemaining.begin();
-        while (ovr < r->size() - 1 && it != newState.mRemaining.end()) {
-            auto prevIt = it++;
-            if (newState.mSeq.contains(**prevIt)) {
-                // ignore permutations that are embedded in this one
-                ignore.insert(*prevIt);
-                newState.mRemaining.erase(prevIt);
-                ++ovr;
-            }
-        }
-        toBePushed[r] = std::move(newState);
+        // bail early if we get the maximum possible overlap
+        if (maxOvr == n - 1)
+            break;
     }
 
-    // push to the queue if not ignored
-    for (auto& p : toBePushed) {
-        if (ignore.count(p.first) == 0)
-            q.push(std::move(p.second));
+    // generate new nodes
+    for (auto r : mRemaining) {
+        int ovr = gPermCache->getOverlap(mLastAdded, r);
+
+        // skip all nodes with less than the max overlap
+        // TODO: figure out if this is really right. Seems to work for n <= 5
+        if (ovr != maxOvr)
+            continue;
+
+        // construct new state
+        auto newState = std::make_shared<State>(*this);
+        ++mNumExpanded;
+
+        newState->mPrev = shared_from_this();
+        newState->mLastAdded = r;
+        newState->mRemaining.remove(r);
+        newState->mCost += n - ovr;
+
+        q.push(newState);
     }
 }
 
@@ -87,5 +92,25 @@ bool State::operator < (const State& rhs) const
     }
     else
         return fl > fr;
+}
+
+IntSequence State::getSequence() const
+{
+    if (mPrev == nullptr)
+        return gPermCache->getPerms()[mLastAdded];
+    else {
+        auto seq = mPrev->getSequence();
+        int ovr = gPermCache->getOverlap(mPrev->mLastAdded, mLastAdded);
+        auto& appendSeq = gPermCache->getPerms()[mLastAdded];
+        for (int i = ovr; i < appendSeq.size(); ++i)
+            seq.push_back(appendSeq[i]);
+        return seq;
+    }
+}
+
+void State::dump() const
+{
+    printf("g=%3d, h=%3d, g+h=%3d, seq=", getCost(), getHeuristic(), getCost()+getHeuristic());
+    getSequence().print();
 }
 

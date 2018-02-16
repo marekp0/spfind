@@ -4,6 +4,7 @@
 #include <queue>
 
 #include "State.hpp"
+#include "PermCache.hpp"
 
 
 int main(int argc, char** argv)
@@ -14,37 +15,39 @@ int main(int argc, char** argv)
     }
 
     int n = std::stoi(argv[1]);
+    PermCache pc(n);
 
     // A* search
-    std::priority_queue<State> states;
-    states.push(State(n));
+    StatePtrHeap states;
+    states.push(std::make_shared<State>(&pc));
 
-    State finalState;
+    StatePtr finalState;
 
     int counter = 0;
 
     while (true) {
-        auto s = states.top();
+        StatePtr s = states.top();
         states.pop();
-        if (s.isGoal()) {
+
+        if (s->isGoal()) {
             finalState = s;
             break;
         }
         else {
-            s.expand(states);
+            s->expand(states);
         }
 
         if (++counter > 10000) {
             counter = 0;
             auto& s = states.top();
-            printf("%d\n", s.getCost() + s.getHeuristic());
+            printf("Current g+h: %d\n", s->getCost() + s->getHeuristic());
         }
     }
 
     printf("Done!\n");
     printf("States expanded: %d\n", State::getNumExpanded());
-    printf("Sequence length: %d\n", finalState.getCost());
+    printf("Sequence length: %d\n", finalState->getCost());
     printf("Sequence: ");
-    finalState.getSequence().print();
+    finalState->getSequence().print();
 }
 

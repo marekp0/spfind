@@ -1,2 +1,5 @@
 spfind
+*.o
+*.d
+*.swp
 

@@ -1,4 +1,21 @@
-all: spfind
+CPP = g++
+CPPFLAGS = -std=c++14 -g
+EXENAME = spfind
+SRCS := $(wildcard *.cpp)
+OBJS := $(SRCS:.cpp=.o)
 
-spfind: main.cpp Sequence.hpp Sequence.ipp State.hpp State.cpp
-	g++ -std=c++14 -O3 -o spfind main.cpp State.cpp
+
+all: $(EXENAME)
+
+$(EXENAME): $(OBJS)
+	$(CPP) $(CPPFLAGS) -o $@ $^
+
+-include $(OBJS:.o=.d)
+
+%.o: %.cpp
+	$(CPP) -c $(CPPFLAGS) $< -o $@
+	$(CPP) -MM $(CPPFLAGS) $< -o $*.d
+
+clean::
+	rm -f *.o *.d *.a $(EXENAME)
+

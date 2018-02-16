@@ -2,14 +2,25 @@
 
 #include <list>
 #include <queue>
+#include <memory>
 #include "Sequence.hpp"
+#include "PermCache.hpp"
 
-class State {
+class State;
+typedef std::shared_ptr<State> StatePtr;
+class StatePtrLess;
+typedef std::priority_queue<StatePtr, std::vector<StatePtr>, StatePtrLess> StatePtrHeap;
+
+/**
+ * Essentially a node in a graph search problem. Represents a subsequence of
+ * a superpermutation.
+ */
+class State : public std::enable_shared_from_this<State> {
 public:
     /**
-     * Creates the start state for problem size n
+     * Creates the start state for a given set of permutations
      */
-    State(int n);
+    State(PermCache* pc);
 
     State() = default;
     State(const State& s) = default;
@@ -20,7 +31,7 @@ public:
     bool isGoal() const;
     int getCost() const;
     int getHeuristic() const;
-    void expand(std::priority_queue<State>& q) const;
+    void expand(StatePtrHeap& q);
 
     /**
      * Returns true if this state is less attractive than rhs; i.e. our
@@ -28,13 +39,22 @@ public:
      */
     bool operator < (const State& rhs) const;
     
-    const IntSequence& getSequence() const { return mSeq; }
+    IntSequence getSequence() const;
     static int getNumExpanded() { return mNumExpanded; }
 
+    void dump() const;
+
 private:
-    IntSequence mSeq;
-    std::list<IntSequence*> mRemaining;
+    StatePtr mPrev;
+    int mCost;
+    PermId mLastAdded = -1;
+    std::list<PermId> mRemaining;
 
     static int mNumExpanded;
+};
+
+class StatePtrLess {
+public:
+    bool operator()(const StatePtr& a, const StatePtr& b) { return *a < *b; }
 };
 
