@@ -37,7 +37,7 @@ int main(int argc, char** argv)
             s->expand(states);
         }
 
-        if (++counter > 10000) {
+        if (++counter > 1000) {
             counter = 0;
             auto& s = states.top();
             printf("Current g+h: %d\n", s->getCost() + s->getHeuristic());

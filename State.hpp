@@ -30,7 +30,7 @@ public:
 public:
     bool isGoal() const;
     int getCost() const;
-    int getHeuristic() const;
+    int getHeuristic() const { return mHeuristic; }
     void expand(StatePtrHeap& q);
 
     /**
@@ -45,6 +45,13 @@ public:
     void dump() const;
 
 private:
+    void recalcHeuristic();
+    int mHeuristic = 0;
+
+    // heuristic types
+    int calcHeuristicMST(); // minimum spanning tree
+    //void calcHeuristicMSA();    // minimum spanning arborescence
+
     StatePtr mPrev;
     int mCost;
     PermId mLastAdded = -1;

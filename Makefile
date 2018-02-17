@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS = -std=c++14 -g
+CPPFLAGS = -std=c++14 -O3
 EXENAME = spfind
 SRCS := $(wildcard *.cpp)
 OBJS := $(SRCS:.cpp=.o)
